@@ -1,0 +1,42 @@
+# 忽略模型检查点和训练文件
+model/**/checkpoint-*/
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# 忽略日志文件
+logs/
+experiments/logs/
+*.log
+events.out.tfevents.*
+
+# 忽略生成的可视化文件
+*.png
+*.html
+
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+.env/
+
+# IDE配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 保留以下文件和目录
+!data/
+!scripts/
+!requirements.txt
+!README.md

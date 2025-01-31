@@ -15,13 +15,19 @@ def load_data(train_path, test_path):
     test_df = pd.read_csv(test_path)
     return train_df, test_df
 
+
 def preprocess_data(df, tokenizer, max_length=128):
     texts = df["text"].tolist()
-    labels_task1 = df["label"].tolist()
-    labels_task2 = df["sentiment_label"].tolist()
+    labels_sarcasm = df["label"].tolist()
+    labels_hostile = df["hostile_label"].tolist()
+    labels_contempt = df["contempt_label"].tolist()
+    labels_humor = df["humor_label"].tolist()
 
-    # 将两个标签组合成一个二维数组
-    combined_labels = [[l1, l2] for l1, l2 in zip(labels_task1, labels_task2)]
+    # 将四个标签组合成一个二维数组
+    combined_labels = [[s, h, c, hu] for s, h, c, hu in zip(labels_sarcasm, 
+                                                           labels_hostile, 
+                                                           labels_contempt, 
+                                                           labels_humor)]
 
     # 创建初始编码
     encodings = tokenizer(
@@ -50,27 +56,32 @@ def preprocess_data(df, tokenizer, max_length=128):
 
     return dataset
 
-
-# 可能还需要修改模型的 forward 方法来适应新的输入格式
 class MultiTaskBertModel(nn.Module):
-    def __init__(self, bert_model_name, num_labels_task1, num_labels_task2):
+    def __init__(self, bert_model_name):
         super(MultiTaskBertModel, self).__init__()
         self.bert = BertModel.from_pretrained(bert_model_name)
-        self.classifier_task1 = nn.Linear(self.bert.config.hidden_size, num_labels_task1)
-        self.classifier_task2 = nn.Linear(self.bert.config.hidden_size, num_labels_task2)
+        hidden_size = self.bert.config.hidden_size
+        
+        # 四个二分类任务的分类器
+        self.classifier_sarcasm = nn.Linear(hidden_size, 2)
+        self.classifier_hostile = nn.Linear(hidden_size, 2)
+        self.classifier_contempt = nn.Linear(hidden_size, 2)
+        self.classifier_humor = nn.Linear(hidden_size, 2)
 
     def forward(self, input_ids, attention_mask=None):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = outputs.pooler_output
-        logits_task1 = self.classifier_task1(pooled_output)
-        logits_task2 = self.classifier_task2(pooled_output)
-        return logits_task1, logits_task2
+        
+        # 四个任务的输出
+        logits_sarcasm = self.classifier_sarcasm(pooled_output)
+        logits_hostile = self.classifier_hostile(pooled_output)
+        logits_contempt = self.classifier_contempt(pooled_output)
+        logits_humor = self.classifier_humor(pooled_output)
+        
+        return logits_sarcasm, logits_hostile, logits_contempt, logits_humor
 
 class MultiTaskTrainer(Trainer):
     def get_train_dataloader(self) -> DataLoader:
-        """
-        重写获取训练数据加载器的方法
-        """
         if self.train_dataset is None:
             raise ValueError("Trainer: training requires a train_dataset.")
         
@@ -85,38 +96,40 @@ class MultiTaskTrainer(Trainer):
         return DataLoader(train_dataset, **dataloader_params)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # 打印调试信息
-        # print("Available keys in inputs:", inputs.keys())
-        # print("Labels shape:", inputs["labels"].shape if "labels" in inputs else "No labels")
-        
         input_ids = inputs["input_ids"]
         attention_mask = inputs["attention_mask"]
         labels = inputs["labels"]
 
         # Forward pass
         outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        logits_task1, logits_task2 = outputs
+        logits_sarcasm, logits_hostile, logits_contempt, logits_humor = outputs
 
         # 确保标签形状正确
         if len(labels.shape) == 1:
-            labels = labels.view(-1, 2)
+            labels = labels.view(-1, 4)
 
-        labels_task1 = labels[:, 0]
-        labels_task2 = labels[:, 1]
+        # 分离不同任务的标签
+        labels_sarcasm = labels[:, 0]
+        labels_hostile = labels[:, 1]
+        labels_contempt = labels[:, 2]
+        labels_humor = labels[:, 3]
 
-        # Compute losses
+        # 计算每个任务的损失
         loss_fct = nn.CrossEntropyLoss()
-        loss_task1 = loss_fct(logits_task1.view(-1, 2), labels_task1.view(-1))
-        loss_task2 = loss_fct(logits_task2.view(-1, 2), labels_task2.view(-1))
+        loss_sarcasm = loss_fct(logits_sarcasm.view(-1, 2), labels_sarcasm.view(-1))
+        loss_hostile = loss_fct(logits_hostile.view(-1, 2), labels_hostile.view(-1))
+        loss_contempt = loss_fct(logits_contempt.view(-1, 2), labels_contempt.view(-1))
+        loss_humor = loss_fct(logits_humor.view(-1, 2), labels_humor.view(-1))
 
-        # Total loss
-        loss = loss_task1 + loss_task2
+        total_loss = 2.0 * loss_sarcasm + 0.3 * (loss_hostile + loss_contempt + loss_humor)
 
-        return (loss, outputs) if return_outputs else loss
+        if return_outputs:
+            return total_loss, outputs
+        return total_loss
 
 def train_model(train_data, test_data, model_save_path):
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    model = MultiTaskBertModel("bert-base-uncased", num_labels_task1=2, num_labels_task2=2).to(device)
+    model = MultiTaskBertModel("bert-base-uncased").to(device)
 
     # 准备数据集
     train_dataset = preprocess_data(train_data, tokenizer)
@@ -136,9 +149,9 @@ def train_model(train_data, test_data, model_save_path):
         per_device_eval_batch_size=16,
         logging_dir="./experiments/logs",
         logging_steps=10,
-        eval_strategy="epoch",  # 使用新的参数名
+        eval_strategy="epoch",
         save_strategy="epoch",
-        save_total_limit=2
+        save_total_limit=2,
     )
 
     trainer = MultiTaskTrainer(
@@ -146,7 +159,7 @@ def train_model(train_data, test_data, model_save_path):
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=collate_fn  # 使用自定义的数据整理函数
+        data_collator=collate_fn
     )
 
     # 训练模型
@@ -154,9 +167,9 @@ def train_model(train_data, test_data, model_save_path):
     trainer.save_model(model_save_path)
     tokenizer.save_pretrained(model_save_path)
 
-
-
 if __name__ == "__main__":
-    # 示例：训练新闻标题数据
-    train_data, test_data = load_data("data/processed/twitter_train_mtl.csv", "data/processed/twitter_test_mtl.csv")
-    train_model(train_data, test_data, "model/multitask/twitter_model")
+    train_data, test_data = load_data(
+        "data/processed/news_train_mtl.csv", 
+        "data/processed/news_test_mtl.csv"
+    )
+    train_model(train_data, test_data, "model/multitask/news_model")

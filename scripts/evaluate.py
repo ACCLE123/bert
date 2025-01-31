@@ -2,7 +2,7 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curv
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import pandas as pd
 import numpy as np
 
@@ -13,8 +13,8 @@ print(f"Using device: {device}")
 
 def evaluate_model(model_path, test_data_path):
     # 加载分词器和模型
-    tokenizer = BertTokenizer.from_pretrained(model_path)
-    model = BertForSequenceClassification.from_pretrained(model_path).to(device)
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForSequenceClassification.from_pretrained(model_path).to(device)
 
     # 加载测试数据
     test_df = pd.read_csv(test_data_path)
@@ -66,4 +66,4 @@ def evaluate_model(model_path, test_data_path):
     plt.show()
 
 if __name__ == "__main__":
-    evaluate_model("model/base/twitter_model", "data/processed/twitter_test.csv")
+    evaluate_model("model/base/news_model", "data/processed/news_test.csv")

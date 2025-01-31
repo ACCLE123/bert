@@ -27,7 +27,7 @@ def load_reddit_data(train_file_path, test_file_path):
                 item = json.loads(line)
                 context = " ".join(item["context"])
                 response = item["response"]
-                text = f"{context} {response}"  # 将上下文和回复拼接
+                text = f"{context} {response}"   # 将上下文和回复拼接
                 label = 1 if item["label"] == "SARCASM" else 0
                 data.append({
                     "text": text,
@@ -50,7 +50,7 @@ def load_twitter_data(train_file_path, test_file_path):
                 item = json.loads(line)
                 context = " ".join(item["context"])
                 response = item["response"]
-                text = f"{context} {response}"  # 将上下文和回复拼接
+                text = f"{context} {response}" 
                 label = 1 if item["label"] == "SARCASM" else 0
                 data.append({
                     "text": text,
@@ -70,28 +70,28 @@ def save_data(df, file_path):
 
 def main():
     # 加载新闻标题数据
-    news_df = load_news_data("news/Sarcasm_Headlines_Dataset.json")
+    news_df = load_news_data("raw/news/Sarcasm_Headlines_Dataset.json")
     news_train, news_test = train_test_split(news_df, test_size=0.2, random_state=42)
-    save_data(news_train, "news_train.csv")
-    save_data(news_test, "news_test.csv")
+    save_data(news_train, "processed/news_train.csv")
+    save_data(news_test, "processed/news_test.csv")
     print(f"新闻标题数据集：训练集大小={len(news_train)}，测试集大小={len(news_test)}")
 
     # 加载Reddit数据
     reddit_train, reddit_test = load_reddit_data(
-        "reddit/sarcasm_detection_shared_task_reddit_training.jsonl",
-        "reddit/sarcasm_detection_shared_task_reddit_testing.jsonl"
+        "raw/reddit/sarcasm_detection_shared_task_reddit_training.jsonl",
+        "raw/reddit/sarcasm_detection_shared_task_reddit_testing.jsonl"
     )
-    save_data(reddit_train, "reddit_train.csv")
-    save_data(reddit_test, "reddit_test.csv")
+    save_data(reddit_train, "processed/reddit_train.csv")
+    save_data(reddit_test, "processed/reddit_test.csv")
     print(f"Reddit数据集：训练集大小={len(reddit_train)}，测试集大小={len(reddit_test)}")
 
     # 加载Twitter数据
     twitter_train, twitter_test = load_twitter_data(
-        "twitter/sarcasm_detection_shared_task_twitter_training.jsonl",
-        "twitter/sarcasm_detection_shared_task_twitter_testing.jsonl"
+        "raw/twitter/sarcasm_detection_shared_task_twitter_training.jsonl",
+        "raw/twitter/sarcasm_detection_shared_task_twitter_testing.jsonl"
     )
-    save_data(twitter_train, "twitter_train.csv")
-    save_data(twitter_test, "twitter_test.csv")
+    save_data(twitter_train, "processed/twitter_train.csv")
+    save_data(twitter_test, "processed/twitter_test.csv")
     print(f"Twitter数据集：训练集大小={len(twitter_train)}，测试集大小={len(twitter_test)}")
 
 if __name__ == "__main__":

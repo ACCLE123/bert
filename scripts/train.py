@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from datasets import Dataset
 import pandas as pd
 import torch
@@ -34,8 +34,8 @@ def preprocess_data(df, tokenizer, max_length=128):
 
 # 训练模型
 def train_model(train_data, test_data, model_save_path):
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2).to(device)
+    tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
+    model = AutoModelForSequenceClassification.from_pretrained("answerdotai/ModernBERT-base", num_labels=2).to(device)
 
     train_encodings = preprocess_data(train_data, tokenizer)
     test_encodings = preprocess_data(test_data, tokenizer)
@@ -69,5 +69,5 @@ def train_model(train_data, test_data, model_save_path):
 
 if __name__ == "__main__":
     # 示例：训练新闻标题数据
-    train_data, test_data = load_data("data/processed/twitter_train.csv", "data/processed/twitter_test.csv")
-    train_model(train_data, test_data, "model/base/twitter_model")
+    train_data, test_data = load_data("data/processed/news_train.csv", "data/processed/news_test.csv")
+    train_model(train_data, test_data, "model/base/news_model")

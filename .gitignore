@@ -1,42 +1,44 @@
-# 忽略模型检查点和训练文件
-model/**/checkpoint-*/
-*.safetensors
-*.pt
-*.pth
-*.bin
+# 模型权重 (体积最大，绝对不要上传)
+model/
+**/*.bin
+**/*.pt
+**/*.pth
+**/*.ckpt
+**/*.safetensors
 
-# 忽略日志文件
+# 数据库文件 (体积巨大，绝对不要上传)
+**/*.db
+**/*.db-journal
+**/*.sqlite
+
+# 数据文件 (通常很大，建议只上传脚本或小样本地数据)
+**/*.csv
+**/*.jsonl
+**/*.parquet
+
+# 训练日志和输出
 logs/
-experiments/logs/
-*.log
-events.out.tfevents.*
+runs/
+checkpoint-*/
 
-# 忽略生成的可视化文件
-*.png
-*.html
-
-# Python缓存文件
+# Python 缓存和环境
 __pycache__/
 *.py[cod]
 *$py.class
-
-# 虚拟环境
 venv/
+.env
+.venv
 env/
-.env/
+build/
+dist/
+*.egg-info/
 
-# IDE配置文件
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# 系统文件
+# IDE 和系统文件
 .DS_Store
-Thumbs.db
+.vscode/
+.cursor/
+.idea/
 
-# 保留以下文件和目录
-!data/
-!scripts/
-!requirements.txt
-!README.md
+# 临时提取的特征缓存 (如果有的话)
+**/*.npy
+**/*.npz

@@ -36,7 +36,7 @@ def preprocess_data(df, tokenizer, max_length=128):
 def train_model(train_data, test_data, model_save_path):
     tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
     model = AutoModelForSequenceClassification.from_pretrained("answerdotai/ModernBERT-base", num_labels=2).to(device)
-
+    
     train_encodings = preprocess_data(train_data, tokenizer)
     test_encodings = preprocess_data(test_data, tokenizer)
 
@@ -68,6 +68,5 @@ def train_model(train_data, test_data, model_save_path):
 
 
 if __name__ == "__main__":
-    # 示例：训练新闻标题数据
-    train_data, test_data = load_data("data/processed/news_train.csv", "data/processed/news_test.csv")
-    train_model(train_data, test_data, "model/base/news_model")
+    train_data, test_data = load_data("data/processed/reddit_train.csv", "data/processed/reddit_test.csv")
+    train_model(train_data, test_data, "model/base/reddit_model")
